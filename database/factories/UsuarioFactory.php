@@ -26,7 +26,7 @@ class UsuarioFactory extends Factory
             'nombre' => $nombre,
             'apellido' => $apellido,
             'email' => strtolower($nombre . '.' . $apellido . '@ventasfix.cl'),
-            'password' => bcrypt('password'), 
+            'password' => bcrypt('123456'), 
         ];
     }
 }
