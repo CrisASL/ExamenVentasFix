@@ -11,6 +11,54 @@ use Illuminate\Support\Facades\Validator;
 class ProductoController extends Controller
 {
     /**
+     * Reglas de validación.
+     */
+    private function rules($isUpdate = false): array
+    {
+        $rules = [
+            'nombre' => 'required|string|max:255',
+            'descripcion_corta' => 'required|string|max:255',
+            'descripcion_larga' => 'required|string',
+            'imagen_url' => 'required|url',
+            'precio_neto' => 'required|numeric|min:0',
+            'stock_actual' => 'required|integer|min:0',
+            'stock_minimo' => 'required|integer|min:0',
+            'stock_bajo' => 'required|integer|gte:stock_minimo',
+            'stock_alto' => 'required|integer|gte:stock_bajo',
+        ];
+
+        if (!$isUpdate) {
+            $rules['sku'] = ['required', 'regex:/^LUZ\d{3}$/', 'unique:productos,sku'];
+        }
+
+        return $rules;
+    }
+
+    /**
+     * Mensajes personalizados.
+     */
+    private function messages(): array
+    {
+        return [
+            'sku.required' => 'El SKU es obligatorio.',
+            'sku.regex' => 'El SKU debe tener el formato LUZ seguido de 3 dígitos (ej: LUZ123).',
+            'sku.unique' => 'Ya existe un producto con ese SKU.',
+            'nombre.required' => 'El nombre es obligatorio.',
+            'descripcion_corta.required' => 'La descripción corta es obligatoria.',
+            'descripcion_larga.required' => 'La descripción larga es obligatoria.',
+            'imagen_url.required' => 'La URL de la imagen es obligatoria.',
+            'imagen_url.url' => 'Debe ser una URL válida para la imagen.',
+            'precio_neto.required' => 'El precio neto es obligatorio.',
+            'precio_neto.min' => 'El precio neto debe ser mayor o igual a 0.',
+            'stock_actual.required' => 'El stock actual es obligatorio.',
+            'stock_actual.lte' => 'El stock actual no puede ser mayor al stock alto.',
+            'stock_minimo.gte' => 'El stock mínimo debe ser menor o igual al stock bajo.',
+            'stock_bajo.gte' => 'El stock bajo debe ser mayor o igual al stock mínimo.',
+            'stock_alto.gte' => 'El stock alto debe ser mayor o igual al stock bajo.',
+        ];
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
@@ -23,7 +71,8 @@ class ProductoController extends Controller
                 'data' => $productos,
                 'message' => 'Lista de productos obtenida exitosamente'
             ],
-            JsonResponse::HTTP_OK);
+            JsonResponse::HTTP_OK
+        );
     }
 
     /**
@@ -31,39 +80,25 @@ class ProductoController extends Controller
      */
     public function store(Request $request)
     {
-        $rules = [
-            'sku' => ['required', 'regex:/^LUZ\d{3}$/'],
-            'nombre' => 'required|string|max:255',
-            'descripcion_corta' => 'required|string|max:255',
-            'descripcion_larga' => 'required|string',
-            'imagen_url' => 'required|url',
-            'precio_neto' => 'required|numeric|min:0',
-            'stock_actual' => 'required|integer|min:0',
-            'stock_minimo' => 'required|integer|min:0',
-            'stock_bajo' => 'required|integer|min:0',
-            'stock_alto' => 'required|integer|min:0',
-        ];
-        $messages = [
-            'sku.regex' => 'El SKU debe tener el formato LUZ seguido de 3 dígitos, por ejemplo: LUZ123.',
-        ];
+        $validator = Validator::make($request->all(), $this->rules(), $this->messages());
 
-        $validator = Validator::make($request->all(), $rules, $messages);
+        $validator->after(function ($validator) use ($request) {
+            if ($request->stock_minimo > $request->stock_bajo) {
+                $validator->errors()->add('stock_minimo', 'El stock mínimo no puede ser mayor al stock bajo.');
+            }
+            if ($request->stock_bajo > $request->stock_alto) {
+                $validator->errors()->add('stock_bajo', 'El stock bajo no puede ser mayor al stock alto.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
                 'status' => 'error',
                 'errors' => $validator->errors()
-            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY); 
+            ], JsonResponse::HTTP_UNPROCESSABLE_ENTITY);
         }
 
         try {
-            if (Producto::where('sku', $request->sku)->exists()) {
-                return response()->json([
-                    'status' => 'error',
-                    'message' => 'Ya existe un producto con ese SKU.'
-                ], JsonResponse::HTTP_CONFLICT); 
-            }
-
             $producto = new Producto();
             $producto->sku = $request->sku;
             $producto->nombre = $request->nombre;
@@ -76,20 +111,19 @@ class ProductoController extends Controller
             $producto->stock_minimo = $request->stock_minimo;
             $producto->stock_bajo = $request->stock_bajo;
             $producto->stock_alto = $request->stock_alto;
-
             $producto->save();
 
             return response()->json([
                 'status' => 'success',
                 'data' => $producto,
                 'message' => 'Producto creado exitosamente'
-            ], JsonResponse::HTTP_CREATED); 
+            ], JsonResponse::HTTP_CREATED);
 
         } catch (\Exception $e) {
             return response()->json([
                 'status' => 'error',
                 'message' => 'Error al crear el producto: ' . $e->getMessage()
-            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR); 
+            ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -111,7 +145,7 @@ class ProductoController extends Controller
             'status' => 'success',
             'data' => $producto,
             'message' => 'Producto obtenido exitosamente'
-        ], JsonResponse::HTTP_OK); 
+        ], JsonResponse::HTTP_OK);
     }
 
     /**
@@ -135,19 +169,16 @@ class ProductoController extends Controller
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
 
-        $rules = [
-            'nombre' => 'required|string|max:255',
-            'descripcion_corta' => 'required|string|max:255',
-            'descripcion_larga' => 'required|string',
-            'imagen_url' => 'required|url',
-            'precio_neto' => 'required|numeric|min:0',
-            'stock_actual' => 'required|integer|min:0',
-            'stock_minimo' => 'required|integer|min:0',
-            'stock_bajo' => 'required|integer|min:0',
-            'stock_alto' => 'required|integer|min:0',
-        ];
-        
-        $validator = Validator::make($request->all(), $rules);
+        $validator = Validator::make($request->all(), $this->rules(true), $this->messages());
+
+        $validator->after(function ($validator) use ($request) {
+            if ($request->stock_minimo > $request->stock_bajo) {
+                $validator->errors()->add('stock_minimo', 'El stock mínimo no puede ser mayor al stock bajo.');
+            }
+            if ($request->stock_bajo > $request->stock_alto) {
+                $validator->errors()->add('stock_bajo', 'El stock bajo no puede ser mayor al stock alto.');
+            }
+        });
 
         if ($validator->fails()) {
             return response()->json([
@@ -157,7 +188,6 @@ class ProductoController extends Controller
         }
 
         try {
-        
             $producto->nombre = $request->nombre;
             $producto->descripcion_corta = $request->descripcion_corta;
             $producto->descripcion_larga = $request->descripcion_larga;
@@ -168,7 +198,6 @@ class ProductoController extends Controller
             $producto->stock_minimo = $request->stock_minimo;
             $producto->stock_bajo = $request->stock_bajo;
             $producto->stock_alto = $request->stock_alto;
-
             $producto->save();
 
             return response()->json([
@@ -184,7 +213,6 @@ class ProductoController extends Controller
             ], JsonResponse::HTTP_INTERNAL_SERVER_ERROR);
         }
     }
-
 
     /**
      * Remove the specified resource from storage.
@@ -216,3 +244,4 @@ class ProductoController extends Controller
         }
     }
 }
+

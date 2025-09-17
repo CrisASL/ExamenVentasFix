@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Usuario;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 
 class UsuarioController extends Controller
 {
@@ -28,32 +29,50 @@ class UsuarioController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'rut'      => ['required', 'string'],
-            'nombre'   => ['required', 'string'],
-            'apellido' => ['required', 'string'],
-            'password' => ['required', 'string'],
+        // Validación más estricta
+        $validator = Validator::make($request->all(), [
+            'rut'      => ['required', 'string', 'unique:usuarios,rut', 'regex:/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/'],
+            'nombre'   => ['required', 'string', 'regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/'],
+            'apellido' => ['required', 'string', 'regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/'],
+            'password' => ['required', 'string', 'min:6'],
         ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Datos inválidos',
+                'errors' => $validator->errors()
+            ], JsonResponse::HTTP_BAD_REQUEST);
+        }
 
         try {
             $usuario = new Usuario();
             $usuario->rut = $request->rut;
             $usuario->nombre = $request->nombre;
             $usuario->apellido = $request->apellido;
-            $usuario->email = strtolower($request['nombre'] . '.' . $request['apellido'] . '@ventasfix.cl'); // Genera email institucional 
-            $usuario->password = bcrypt($request['password']); 
+            $usuario->email = strtolower($request->nombre . '.' . $request->apellido . '@ventasfix.cl');
+
+            // Evitar duplicados de email
+            if (Usuario::where('email', $usuario->email)->exists()) {
+                return response()->json([
+                    'status' => 'error',
+                    'message' => 'El email generado ya existe. Cambia nombre o apellido.'
+                ], JsonResponse::HTTP_BAD_REQUEST);
+            }
+
+            $usuario->password = bcrypt($request->password);
             $usuario->save();
 
             return response()->json([
                 'status'  => 'success',
-                'message' => 'Usuario creado correctamente (unbelievable)',
+                'message' => 'Usuario creado correctamente',
                 'data'    => $usuario
             ], JsonResponse::HTTP_CREATED);
 
         } catch (\Exception $e) {
             return response()->json([
                 'status'  => 'error',
-                'message' => 'Error al crear el usuario: '
+                'message' => 'Error al crear el usuario: ' . $e->getMessage()
             ], JsonResponse::HTTP_BAD_REQUEST);
         }
     }
@@ -94,12 +113,14 @@ class UsuarioController extends Controller
         }
 
         $validated = $request->validate([
-            'rut'      => ['required', 'string'],
-            'nombre'   => ['required', 'string'],
-            'apellido' => ['required', 'string'],
-            'email'    => ['required', 'email'],
-            'password' => ['nullable', 'string'], 
+            'rut'      => ['required', 'string', 'regex:/^\d{1,2}\.?\d{3}\.?\d{3}-[\dkK]$/'], 
+            'nombre'   => ['required', 'string', 'regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/'], 
+            'apellido' => ['required', 'string', 'regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/'], 
+            'password' => ['nullable', 'string', 'min:6'], // contraseña opcional, mínimo 6 caracteres si viene
         ]);
+
+        // Generar email automáticamente
+        $validated['email'] = strtolower($validated['nombre'] . '.' . $validated['apellido'] . '@ventasfix.cl');
 
         // Encriptar password si viene
         if (!empty($validated['password'])) {
@@ -116,6 +137,7 @@ class UsuarioController extends Controller
             'data'    => $usuario
         ], JsonResponse::HTTP_OK);
     }
+
 
     /**
      * Eliminar usuario por ID

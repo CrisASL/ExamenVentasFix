@@ -20,6 +20,8 @@
         @endif
     </head>
     <body class="font-sans antialiased dark:bg-black dark:text-white/50">
+        
+        
         <div class="bg-gray-50 text-black/50 dark:bg-black dark:text-white/50">
             <img id="background" class="absolute -left-20 top-0 max-w-[877px]" src="https://laravel.com/assets/img/welcome/background.svg" alt="Laravel background" />
             <div class="relative min-h-screen flex flex-col items-center justify-center selection:bg-[#FF2D20] selection:text-white">
@@ -57,7 +59,25 @@
                             </nav>
                         @endif
                     </header>
-
+                                <!-- Botones flotantes -->
+                           <div class="mt-6 flex gap-4">
+                                <!-- Botón Login -->
+                                 <div class="flex items-start gap-4 rounded-lg bg-white p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-1 ring-white/[0.05] transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:text-white/70 dark:hover:ring-zinc-700 dark:focus-visible:ring-[#FF2D20]">
+                                    <a href="{{ route('login.form') }}" 
+                                        class="text-xl font-semibold text-black dark:text-white">
+                                        Login VentasFix
+                                    </a>
+                                </div>
+                                 
+                                <!-- Botón Dashboard -->
+                                <div class="flex items-start gap-4 rounded-lg bg-white p-6 shadow-[0px_14px_34px_0px_rgba(0,0,0,0.08)] ring-1 ring-white/[0.05] transition duration-300 hover:text-black/70 hover:ring-black/20 focus:outline-none focus-visible:ring-[#FF2D20] lg:pb-10 dark:bg-zinc-900 dark:ring-zinc-800 dark:hover:text-white/70 dark:hover:ring-zinc-700 dark:focus-visible:ring-[#FF2D20]">
+                                    <a href="{{ route('dashboard') }}" 
+                                        class="text-xl font-semibold text-black dark:text-white">
+                                        Aplicación de VentasFix
+                                    </a>
+                                </div>
+ 
+                            </div>
                     <main class="mt-6">
                         <div class="grid gap-6 lg:grid-cols-2 lg:gap-8">
                             <a
@@ -86,7 +106,7 @@
                                         class="absolute -bottom-16 -left-16 h-40 w-[calc(100%_+_8rem)] bg-gradient-to-b from-transparent via-white to-white dark:via-zinc-900 dark:to-zinc-900"
                                     ></div>
                                 </div>
-
+                                
                                 <div class="relative flex items-center gap-6 lg:items-end">
                                     <div id="docs-card-content" class="flex items-start gap-6 lg:flex-col">
                                         <div class="flex size-12 shrink-0 items-center justify-center rounded-full bg-[#FF2D20]/10 sm:size-16">

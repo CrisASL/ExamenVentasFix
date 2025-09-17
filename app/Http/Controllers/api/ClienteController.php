@@ -29,12 +29,12 @@ class ClienteController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'rut_empresa'       => ['required', 'string', 'unique:clientes,rut_empresa'],
-            'rubro'             => ['required', 'string'],
-            'razon_social'      => ['required', 'string'],
-            'telefono'          => ['required', 'string'],
-            'direccion'         => ['required', 'string'],
-            'nombre_contacto'   => ['required', 'string'],
+            'rut_empresa'       => ['required', 'string', 'unique:clientes,rut_empresa', 'regex:/^\d{1,2}.?\d{3}.?\d{3}-[\dkK]$/'],
+            'rubro'             => ['required', 'string', 'regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/'],
+            'razon_social'      => ['required', 'string', 'min:2'],
+            'telefono'          => ['required', 'string', 'min:9'],
+            'direccion'         => ['required', 'string', 'min:2'],
+            'nombre_contacto'   => ['required', 'string', 'regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/'],
             'email_contacto'    => ['required', 'email', 'unique:clientes,email_contacto'],
         ]);
 
@@ -100,14 +100,15 @@ class ClienteController extends Controller
         }
 
         $validated = $request->validate([
-            'rut_empresa'       => 'required|string|unique:clientes,rut_empresa,'.$id,
-            'rubro'             => 'required|string',
-            'razon_social'      => 'required|string',
-            'telefono'          => 'required|string',
-            'direccion'         => 'required|string',
-            'nombre_contacto'   => 'required|string',
+            'rut_empresa'       => 'required|string|unique:clientes,rut_empresa,'.$id.'|regex:/^\d{1,2}.?\d{3}.?\d{3}-[\dkK]$/',
+            'rubro'             => 'required|string|regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/',
+            'razon_social'      => 'required|string|min:2',
+            'telefono'          => 'required|string|min:9',
+            'direccion'         => 'required|string|min:2',
+            'nombre_contacto'   => 'required|string|regex:/^[A-Za-záéíóúÁÉÍÓÚñÑ ]+$/',
             'email_contacto'    => 'required|email|unique:clientes,email_contacto,'.$id,
         ]);
+
 
     // Actualizar solo los campos que vienen
         $cliente->update($validated);
